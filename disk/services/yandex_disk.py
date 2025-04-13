@@ -1,10 +1,12 @@
 import requests
 from typing import Any, Dict, List
+from django.core.cache import cache
+
+
+CACHE_TTL = 60 * 5
+
 
 class YandexDiskService:
-    """
-    Сервис для взаимодействия с API Яндекс.Диска.
-    """
     BASE_URL = "https://cloud-api.yandex.net/v1/disk"
 
     def __init__(self, public_key: str) -> None:
@@ -12,23 +14,31 @@ class YandexDiskService:
 
     def get_file_list(self) -> List[Dict[str, Any]]:
         """
-        Метод позволяет выводить список папок/файлов по публичной ссылке
-
+        Получение списка файлов и папок с Яндекс.Диска с кэшированием на 5 минут.
         """
-        url = f"{self.BASE_URL}/public/resources"
+        cache_key = f"yadisk_{self.public_key}"
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            print('принят кэш')
+            return cached_result
+
         params = {
             "public_key": self.public_key,
             "limit": 100
         }
-        response = requests.get(url, params=params)
+        response = requests.get(f"{self.BASE_URL}/public/resources", params=params)
         if response.status_code != 200:
             raise Exception(f"Ошибка получения данных: {response.text}")
+
         data = response.json()
         embedded = data.get("_embedded")
         if not embedded:
-            raise Exception("Неверный формат ответа от API. Возможно, публичная ссылка некорректна.")
+            raise Exception("Неверный формат ответа от API.")
         file_items = embedded.get("items", [])
+
+        cache.set(cache_key, file_items, timeout=CACHE_TTL)
         return file_items
+
 
     def download_file(self, file_path: str) -> bytes:
         """

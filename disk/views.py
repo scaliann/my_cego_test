@@ -67,7 +67,7 @@ class BulkDownloadView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         public_key = request.POST.get("public_key", "")
-        file_paths = request.POST.getlist("files")  # список выбранных файлов
+        file_paths = request.POST.getlist("files")
 
         if not public_key:
             return HttpResponse("Не передан public_key", status=400)
@@ -76,7 +76,7 @@ class BulkDownloadView(LoginRequiredMixin, View):
 
         service = YandexDiskService(public_key)
 
-        # Создаём архив в памяти
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w") as zip_file:
             for path in file_paths:
@@ -86,10 +86,9 @@ class BulkDownloadView(LoginRequiredMixin, View):
                     raise Http404(f"Ошибка загрузки файла {path}: {e}")
 
                 filename = path.split("/")[-1] or "file"
-                # Добавляем файл в архив
                 zip_file.writestr(filename, file_content)
 
-        # Подготовим ответ пользователю с архивом
+
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer.read(), content_type="application/zip")
         response["Content-Disposition"] = 'attachment; filename="selected_files.zip"'
