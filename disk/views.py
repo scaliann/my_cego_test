@@ -96,31 +96,25 @@ class BulkDownloadView(LoginRequiredMixin, View):
         return response
 
 
-class SequentialDownloadView(LoginRequiredMixin, View):
+class SequentialDownloadResponseView(LoginRequiredMixin, View):
     """
-    Представление для скачивания файлов по очереди.
-    Получаем список выбранных файлов (через POST),
-    формируем список ссылок для индивидуального скачивания,
-    и возвращаем HTML-страницу с JavaScript, который инициирует загрузку.
+    Обрабатывает POST-запрос с чекбоксами и возвращает страницу,
+    где JS по очереди запускает скачивание всех файлов.
     """
 
-    def post(self, request, *args, **kwargs):
-        public_key = request.POST.get("public_key", "")
+    def post(self, request):
+        public_key = request.POST.get("public_key")
         file_paths = request.POST.getlist("files")
 
-        if not public_key:
-            return HttpResponse("Не передан public_key", status=400)
-        if not file_paths:
-            return HttpResponse("Не выбрано ни одного файла для скачивания.", status=400)
+        if not public_key or not file_paths:
+            return render(request, "disk/error.html", {"message": "Файлы не выбраны"})
 
-        # Формируем список ссылок для скачивания каждого файла
-        download_links = []
-        for path in file_paths:
-            # Формируем ссылку, которая обращается к FileDownloadView с нужными параметрами
-            link = reverse('download') + f"?public_key={public_key}&file_path={path}"
-            download_links.append(link)
+        base_url = reverse("download")
+        links = [
+            f"{base_url}?public_key={public_key}&file_path={path}"
+            for path in file_paths
+        ]
 
-        context = {
-            'download_links': json.dumps(download_links)
-        }
-        return render(request, 'disk/sequential_download.html', context)
+        return render(request, "disk/auto_download.html", {
+            "download_links_json": json.dumps(links)
+        })

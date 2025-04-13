@@ -13,6 +13,7 @@ class YandexDiskService:
     def get_file_list(self) -> List[Dict[str, Any]]:
         """
         Метод позволяет выводить список папок/файлов по публичной ссылке
+
         """
         url = f"{self.BASE_URL}/public/resources"
         params = {
@@ -36,8 +37,6 @@ class YandexDiskService:
         Сначала получаем временную ссылку для скачивания через эндпоинт /public/resources/download,
         затем выполняем запрос для загрузки содержимого файла.
 
-        :param file_path: путь к файлу на Яндекс.Диске (например, /file1.txt)
-        :return: содержимое файла в виде байт
         """
         url = f"{self.BASE_URL}/public/resources/download"
         params = {
