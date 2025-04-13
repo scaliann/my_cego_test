@@ -4,7 +4,8 @@ services:
   web:
     build: .
     container_name: django_app
-    command: gunicorn yadisk_app.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn yadisk_app.wsgi:application --bind 0.0.0.0:8000 --worker-class gevent --workers 3 --timeout 120 --graceful-timeout 120
+
     ports:
       - "8000:8000"
     volumes:
